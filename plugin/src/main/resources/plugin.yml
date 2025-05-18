@@ -1,0 +1,15 @@
+name: $name
+version: $version
+main: io.github.lumine1909.registrylib.RegistryLibPlugin
+api-version: $apiVersion
+description: $description
+authors:
+  - Lumine1909
+commands:
+  registrylib:
+    permission: registrylib.admin
+  reloadregistry:
+    permission: registrylib.reloadregistry
+permissions:
+  registrylib.reloadregistry:
+    default: true
