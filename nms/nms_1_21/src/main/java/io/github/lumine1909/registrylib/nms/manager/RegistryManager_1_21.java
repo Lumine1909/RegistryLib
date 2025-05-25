@@ -17,7 +17,6 @@ import java.util.Objects;
 
 import static io.github.lumine1909.registrylib.util.ReflectionUtil.set;
 
-@SuppressWarnings("unchecked")
 public abstract class RegistryManager_1_21<T> implements RegistryManager, Validator {
 
     protected abstract MappedRegistry<T> registry();
@@ -81,7 +80,7 @@ public abstract class RegistryManager_1_21<T> implements RegistryManager, Valida
 
     public static class Biome extends RegistryManager_1_21<net.minecraft.world.level.biome.Biome> implements RegistryManager.Biome {
 
-        private static final MappedRegistry<net.minecraft.world.level.biome.Biome> REGISTRY = (MappedRegistry<net.minecraft.world.level.biome.Biome>) MinecraftServer.getServer().registryAccess().lookup(Registries.BIOME).orElseThrow();
+        private static final MappedRegistry<net.minecraft.world.level.biome.Biome> REGISTRY = (MappedRegistry<net.minecraft.world.level.biome.Biome>) MinecraftServer.getServer().registryAccess().registry(Registries.BIOME).orElseThrow();
 
         @Override
         protected MappedRegistry<net.minecraft.world.level.biome.Biome> registry() {
@@ -101,7 +100,7 @@ public abstract class RegistryManager_1_21<T> implements RegistryManager, Valida
 
     public static class DimensionType extends RegistryManager_1_21<net.minecraft.world.level.dimension.DimensionType> implements RegistryManager.DimensionType {
 
-        private static final MappedRegistry<net.minecraft.world.level.dimension.DimensionType> REGISTRY = (MappedRegistry<net.minecraft.world.level.dimension.DimensionType>) MinecraftServer.getServer().registryAccess().lookup(Registries.DIMENSION_TYPE).orElseThrow();
+        private static final MappedRegistry<net.minecraft.world.level.dimension.DimensionType> REGISTRY = (MappedRegistry<net.minecraft.world.level.dimension.DimensionType>) MinecraftServer.getServer().registryAccess().registry(Registries.DIMENSION_TYPE).orElseThrow();
 
         @Override
         protected MappedRegistry<net.minecraft.world.level.dimension.DimensionType> registry() {

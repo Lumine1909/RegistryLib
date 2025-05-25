@@ -10,9 +10,9 @@ public class RegisterEvent extends Event implements Cancellable {
 
     public static final HandlerList HANDLERS = new HandlerList();
 
-    public final RegistryType registryType;
-    public String key;
-    public Object value;
+    private final RegistryType registryType;
+    private String key;
+    private Object value;
 
     public boolean cancelled = false;
 

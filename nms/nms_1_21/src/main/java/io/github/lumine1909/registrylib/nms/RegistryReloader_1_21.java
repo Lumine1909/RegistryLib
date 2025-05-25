@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.github.lumine1909.registrylib.util.ReflectionUtil.*;
-import static io.github.lumine1909.registrylib.util.ReflectionUtil.get;
 
 @SuppressWarnings("all")
 public class RegistryReloader_1_21 implements RegistryReloader {
@@ -160,7 +159,7 @@ public class RegistryReloader_1_21 implements RegistryReloader {
     @Override
     public void reloadFailed(String playerName) {
         PlayerList playerList = server.getPlayerList();
-        ServerPlayer player = reloadingPlayers.get(playerName);
+        ServerPlayer player = playerList.getPlayerByName(playerName);
         if (player == null) {
             return;
         }

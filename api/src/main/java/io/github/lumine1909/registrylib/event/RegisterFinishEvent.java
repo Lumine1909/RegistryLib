@@ -9,7 +9,7 @@ public class RegisterFinishEvent extends RegisterEvent {
 
     public static final HandlerList HANDLERS = new HandlerList();
 
-    public final Holder holder;
+    private final Holder holder;
 
     public RegisterFinishEvent(RegistryType registryType, Holder holder) {
         super(registryType, holder.key(), holder.value());

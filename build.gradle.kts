@@ -7,7 +7,7 @@ allprojects {
     plugins.apply("java")
 
     group = "io.github.lumine1909"
-    version = "1.0.2"
+    version = "beta-1.0.2"
     description = "Minecraft Registry manage plugin"
 
     repositories {

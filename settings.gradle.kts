@@ -14,7 +14,7 @@ pluginManagement {
 }
 
 include(":plugin")
-include("api")
+include(":api")
 include(":common")
 
 include(":nms:nms_1_16_5")

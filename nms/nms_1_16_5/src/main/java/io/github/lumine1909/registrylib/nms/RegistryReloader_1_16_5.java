@@ -116,7 +116,7 @@ public class RegistryReloader_1_16_5 implements RegistryReloader {
     @Override
     public void reloadFailed(String playerName) {
         PlayerList playerList = server.getPlayerList();
-        EntityPlayer player = reloadingPlayers.get(playerName);
+        EntityPlayer player = playerList.getPlayer(playerName);
         if (player == null) {
             return;
         }

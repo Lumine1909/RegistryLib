@@ -152,7 +152,7 @@ public class RegistryReloader_1_19_4 implements RegistryReloader {
     @Override
     public void reloadFailed(String playerName) {
         PlayerList playerList = server.getPlayerList();
-        ServerPlayer player = reloadingPlayers.get(playerName);
+        ServerPlayer player = playerList.getPlayerByName(playerName);
         if (player == null) {
             return;
         }

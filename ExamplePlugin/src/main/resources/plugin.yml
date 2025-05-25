@@ -11,7 +11,5 @@ commands:
   reloadregistry:
     permission: registrylib.reloadregistry
 permissions:
-  registrylib.admin:
-    default : op
   registrylib.reloadregistry:
     default: true

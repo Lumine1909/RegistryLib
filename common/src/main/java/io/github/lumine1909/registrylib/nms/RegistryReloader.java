@@ -37,4 +37,8 @@ public interface RegistryReloader extends Closable {
     default boolean onPacketSend(String playerName, Object packet) {
         return true;
     }
+
+    default boolean onPacketReceive(String playerName, Object packet) {
+        return true;
+    }
 }

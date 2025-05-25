@@ -15,6 +15,7 @@ import java.util.UUID;
 import static io.github.lumine1909.registrylib.common.Constants.CHANNEL_INIT_KEY;
 import static io.github.lumine1909.registrylib.common.Constants.PACKET_HANDLER_NAME;
 
+@SuppressWarnings("all")
 public class ChannelInjector_1_21_5 implements ChannelInjector {
 
     private static final BiMap<String, Channel> MODIFIED_CHANNELS = HashBiMap.create();
@@ -73,6 +74,9 @@ public class ChannelInjector_1_21_5 implements ChannelInjector {
                     MODIFIED_CHANNELS.put(name, channel);
                 }
                 if (msg instanceof ServerboundFinishConfigurationPacket && reloader.postReload(playerName)) {
+                    return false;
+                }
+                if (!reloader.onPacketReceive(playerName, msg)) {
                     return false;
                 }
                 return true;

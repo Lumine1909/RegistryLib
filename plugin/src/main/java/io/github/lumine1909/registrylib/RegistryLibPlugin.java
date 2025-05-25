@@ -65,8 +65,7 @@ public class RegistryLibPlugin extends JavaPlugin implements RegistryAPI {
                 new RegistryManager_1_21_5.Biome(),
                 new RegistryManager_1_21_5.DimensionType()
             );
-        }
-        if (MC_VER >= 2103) {
+        } else if (MC_VER >= 2103) {
             registryInjector = new RegistryInjector_1_21_3();
             registryReloader = new RegistryReloader_1_21_3(this);
             channelInjector = new ChannelInjector_1_21_3(registryReloader);

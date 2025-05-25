@@ -21,7 +21,7 @@ public class RegistryLibCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-        if (!(sender instanceof ConsoleCommandSender) || !(sender instanceof RemoteConsoleCommandSender)) {
+        if (!sender.hasPermission("registrylib.admin")) {
             return true;
         }
         plugin.callReload();

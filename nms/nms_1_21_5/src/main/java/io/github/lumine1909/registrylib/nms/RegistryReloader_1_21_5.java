@@ -17,6 +17,7 @@ import net.minecraft.server.network.config.JoinWorldTask;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.storage.LevelData;
 import org.bukkit.Bukkit;
@@ -28,16 +29,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.github.lumine1909.registrylib.util.ReflectionUtil.*;
-import static io.github.lumine1909.registrylib.util.ReflectionUtil.get;
 
+@SuppressWarnings("all")
 public class RegistryReloader_1_21_5 implements RegistryReloader {
 
     private static final Map<String, Connection> reloadingConnections = new HashMap<>();
     private static final Map<String, ServerPlayer> reloadingPlayers = new HashMap<>();
     private static final Map<String, List<Packet<?>>> pendingMessages = new HashMap<>();
     private static final Executor executor = Executors.newVirtualThreadPerTaskExecutor();
+    private static final MinecraftServer server = MinecraftServer.getServer();
 
-    private final MinecraftServer server = MinecraftServer.getServer();
     private final Plugin plugin;
 
     public RegistryReloader_1_21_5(Plugin plugin) {
@@ -53,13 +54,12 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
         Bukkit.getScheduler().runTask(plugin, () -> {
             ServerGamePacketListenerImpl connection = player.connection;
             player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.CHANGED_DIMENSION);
-            String name = player.getGameProfile().getName();
             set(ServerGamePacketListenerImpl.class, "waitingForSwitchToConfig", connection, true);
             connection.send(ClientboundStartConfigurationPacket.INSTANCE);
             connection.connection.setupOutboundProtocol(ConfigurationProtocols.CLIENTBOUND);
-            reloadingPlayers.put(name, player);
-            reloadingConnections.put(name, connection.connection);
-            pendingMessages.put(name, new ArrayList<>());
+            reloadingPlayers.put(playerName, player);
+            reloadingConnections.put(playerName, connection.connection);
+            pendingMessages.put(playerName, new ArrayList<>());
             executor.execute(() -> {
                 while (!(connection.connection.getPacketListener() instanceof ServerConfigurationPacketListenerImpl configurationPacketListener)) {
                     LockSupport.parkNanos(1000);
@@ -88,7 +88,7 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
                 connection.getPacketListener(),
                 JoinWorldTask.TYPE
             );
-
+            connection.setupOutboundProtocol(GameProtocols.CLIENTBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(MinecraftServer.getServer().registryAccess())));
             ServerGamePacketListenerImpl serverGamePacketListenerImpl = new ServerGamePacketListenerImpl(
                 MinecraftServer.getServer(),
                 connection,
@@ -96,9 +96,8 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
                 invoke(ServerCommonPacketListenerImpl.class, "createCookie", ClientInformation.class, player.connection, player.clientInformation())
             );
             player.connection = serverGamePacketListenerImpl;
-            connection.setupOutboundProtocol(GameProtocols.CLIENTBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(MinecraftServer.getServer().registryAccess())));
             connection.setupInboundProtocol(
-                GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(MinecraftServer.getServer().registryAccess()), serverGamePacketListenerImpl),
+                GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(MinecraftServer.getServer().registryAccess()), player.connection),
                 player.connection
             );
             reloadingPlayers.remove(playerName);
@@ -113,7 +112,7 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
                 levelData.isHardcore(),
                 MinecraftServer.getServer().levelKeys(),
                 MinecraftServer.getServer().getPlayerList().getMaxPlayers(),
-                player.serverLevel().spigotConfig.viewDistance,// Spigot - view distance
+                player.serverLevel().spigotConfig.viewDistance,
                 player.serverLevel().spigotConfig.simulationDistance,
                 _boolean1,
                 !_boolean,
@@ -121,6 +120,18 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
                 player.createCommonSpawnInfo(player.serverLevel()),
                 MinecraftServer.getServer().enforceSecureProfile()
             ));
+            player.getBukkitEntity().sendSupportedChannels();
+            serverGamePacketListenerImpl.send(new ClientboundChangeDifficultyPacket(levelData.getDifficulty(), levelData.isDifficultyLocked()));
+            serverGamePacketListenerImpl.send(new ClientboundPlayerAbilitiesPacket(player.getAbilities()));
+            serverGamePacketListenerImpl.send(new ClientboundSetHeldSlotPacket(player.getInventory().getSelectedSlot()));
+            RecipeManager recipeManager = this.server.getRecipeManager();
+            serverGamePacketListenerImpl.send(
+                new ClientboundUpdateRecipesPacket(recipeManager.getSynchronizedItemProperties(), recipeManager.getSynchronizedStonecutterRecipes())
+            );
+            server.getPlayerList().sendPlayerPermissionLevel(player);
+            player.getStats().markAllDirty();
+            player.getRecipeBook().sendInitialRecipeBook(player);
+            server.getPlayerList().updateEntireScoreboard(player.serverLevel().getScoreboard(), player);
             PlayerList playerList = MinecraftServer.getServer().getPlayerList();
             playerList.sendPlayerPermissionLevel(player);
             player.getStats().markAllDirty();
@@ -133,7 +144,6 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
             playerList.sendAllPlayerInfo(player);
             player.onUpdateAbilities();
             playerList.sendActivePlayerEffects(player);
-            playerList.updateEntireScoreboard(player.serverLevel().getScoreboard(), player);
             player.connection.send(ClientboundPlayerPositionPacket.of(player.getId(), PositionMoveRotation.of(player), Collections.emptySet()));
 
             player.serverLevel().addNewPlayer(player);
@@ -147,8 +157,22 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
     }
 
     @Override
+    public boolean onPacketReceive(String playerName, Object packet) {
+        if (reloadingPlayers.containsKey(playerName) &&
+            packet instanceof Packet<?> &&
+            !(packet instanceof ServerboundConfigurationAcknowledgedPacket) &&
+            !(packet.getClass().getName().contains(".common.") || packet.getClass().getName().contains(".configuration.") || packet.getClass().getName().contains(".cookie."))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public boolean onPacketSend(String playerName, Object packet) {
-        if (reloadingPlayers.containsKey(playerName) && packet instanceof Packet<?> && !(packet.getClass().getName().contains(".common.") || packet.getClass().getName().contains(".configuration."))) {
+        if (reloadingPlayers.containsKey(playerName) &&
+            packet instanceof Packet<?> &&
+            !(packet.getClass().getName().contains(".common.") || packet.getClass().getName().contains(".configuration.") || packet.getClass().getName().contains(".cookie."))
+        ) {
             pendingMessages.get(playerName).add((Packet<?>) packet);
             return false;
         }
@@ -158,19 +182,21 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
     @Override
     public void reloadFailed(String playerName) {
         PlayerList playerList = server.getPlayerList();
-        ServerPlayer player = reloadingPlayers.get(playerName);
+        ServerPlayer player = playerList.getPlayerByName(playerName);
         if (player == null) {
             return;
         }
 
-        invoke(PlayerList.class, "save", ServerPlayer.class, playerList, player);
-        playerList.players.remove(player);
-        ((Map<?, ?>) get(PlayerList.class, "playersByName", playerList)).remove(playerName);
-        ((Map<?, ?>) get(PlayerList.class, "playersByUUID", playerList)).remove(player.getUUID());
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            invoke(PlayerList.class, "save", ServerPlayer.class, playerList, player);
+            playerList.players.remove(player);
+            ((Map<?, ?>) get(PlayerList.class, "playersByName", playerList)).remove(playerName);
+            ((Map<?, ?>) get(PlayerList.class, "playersByUUID", playerList)).remove(player.getUUID());
 
-        reloadingConnections.remove(playerName);
-        reloadingPlayers.remove(playerName);
-        pendingMessages.remove(playerName);
+            reloadingConnections.remove(playerName);
+            reloadingPlayers.remove(playerName);
+            pendingMessages.remove(playerName);
+        });
     }
 
     @Override

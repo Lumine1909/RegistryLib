@@ -76,6 +76,9 @@ public class ChannelInjector_1_21_3 implements ChannelInjector {
                 if (msg instanceof ServerboundFinishConfigurationPacket && reloader.postReload(playerName)) {
                     return false;
                 }
+                if (!reloader.onPacketReceive(playerName, msg)) {
+                    return false;
+                }
                 return true;
             }
 
