@@ -23,7 +23,7 @@ tasks {
         dependsOn(shadowJar)
     }
     shadowJar {
-        archiveFileName.set("RegistryLib-${version}-MC-1.16.5-1.21.5.jar")
+        archiveFileName.set("RegistryLib-${version}-MC-1.16.5-1.21.6.jar")
         minimize()
         dependsOn(project(":nms:nms_1_19_4").tasks.named("reobfJar"))
     }

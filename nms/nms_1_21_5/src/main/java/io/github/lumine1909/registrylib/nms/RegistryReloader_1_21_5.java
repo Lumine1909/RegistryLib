@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.configuration.ConfigurationProtocols;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ConfigurationTask;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
@@ -53,7 +54,7 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
         }
         Bukkit.getScheduler().runTask(plugin, () -> {
             ServerGamePacketListenerImpl connection = player.connection;
-            player.serverLevel().removePlayerImmediately(player, Entity.RemovalReason.CHANGED_DIMENSION);
+            ((ServerLevel) player.level()).getMinecraftWorld().removePlayerImmediately(player, Entity.RemovalReason.CHANGED_DIMENSION);
             set(ServerGamePacketListenerImpl.class, "waitingForSwitchToConfig", connection, true);
             connection.send(ClientboundStartConfigurationPacket.INSTANCE);
             connection.connection.setupOutboundProtocol(ConfigurationProtocols.CLIENTBOUND);
@@ -81,6 +82,7 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
         Bukkit.getScheduler().runTask(plugin, () -> {
             Connection connection = reloadingConnections.get(playerName);
             ServerPlayer player = reloadingPlayers.get(playerName);
+            ServerLevel level = ((ServerLevel) player.level());
             invoke(
                 ServerConfigurationPacketListenerImpl.class,
                 "finishCurrentTask",
@@ -102,8 +104,8 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
             );
             reloadingPlayers.remove(playerName);
             reloadingConnections.remove(playerName);
-            LevelData levelData = player.serverLevel().levelData;
-            GameRules gameRules = player.serverLevel().getGameRules();
+            LevelData levelData = level.levelData;
+            GameRules gameRules = level.getGameRules();
             boolean _boolean = gameRules.getBoolean(GameRules.RULE_DO_IMMEDIATE_RESPAWN);
             boolean _boolean1 = gameRules.getBoolean(GameRules.RULE_REDUCEDDEBUGINFO);
             boolean _boolean2 = gameRules.getBoolean(GameRules.RULE_LIMITED_CRAFTING);
@@ -112,12 +114,12 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
                 levelData.isHardcore(),
                 MinecraftServer.getServer().levelKeys(),
                 MinecraftServer.getServer().getPlayerList().getMaxPlayers(),
-                player.serverLevel().spigotConfig.viewDistance,
-                player.serverLevel().spigotConfig.simulationDistance,
+                level.spigotConfig.viewDistance,
+                level.spigotConfig.simulationDistance,
                 _boolean1,
                 !_boolean,
                 _boolean2,
-                player.createCommonSpawnInfo(player.serverLevel()),
+                player.createCommonSpawnInfo(level),
                 MinecraftServer.getServer().enforceSecureProfile()
             ));
             player.getBukkitEntity().sendSupportedChannels();
@@ -131,7 +133,7 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
             server.getPlayerList().sendPlayerPermissionLevel(player);
             player.getStats().markAllDirty();
             player.getRecipeBook().sendInitialRecipeBook(player);
-            server.getPlayerList().updateEntireScoreboard(player.serverLevel().getScoreboard(), player);
+            server.getPlayerList().updateEntireScoreboard(level.getScoreboard(), player);
             PlayerList playerList = MinecraftServer.getServer().getPlayerList();
             playerList.sendPlayerPermissionLevel(player);
             player.getStats().markAllDirty();
@@ -140,13 +142,13 @@ public class RegistryReloader_1_21_5 implements RegistryReloader {
             if (!onlinePlayers.isEmpty()) {
                 player.connection.send(ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(onlinePlayers, player));
             }
-            playerList.sendLevelInfo(player, player.serverLevel());
+            playerList.sendLevelInfo(player, level);
             playerList.sendAllPlayerInfo(player);
             player.onUpdateAbilities();
             playerList.sendActivePlayerEffects(player);
             player.connection.send(ClientboundPlayerPositionPacket.of(player.getId(), PositionMoveRotation.of(player), Collections.emptySet()));
 
-            player.serverLevel().addNewPlayer(player);
+            level.addNewPlayer(player);
             MinecraftServer.getServer().getCustomBossEvents().onPlayerConnect(player);
             for (Packet<?> packet : pendingMessages.get(playerName)) {
                 player.connection.send(packet);

@@ -14,7 +14,7 @@ public class Constants {
 
     private static int obtainVersion() {
         try {
-            Matcher matcher = Pattern.compile("\\(MC: ([^)]+)\\)").matcher(Bukkit.getVersion());
+            Matcher matcher = Pattern.compile("^(.*?)(?=-)").matcher(Bukkit.getBukkitVersion());
             if (!matcher.find()) {
                 return -1;
             }
