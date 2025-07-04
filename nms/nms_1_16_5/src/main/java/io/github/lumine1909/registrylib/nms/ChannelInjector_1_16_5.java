@@ -8,6 +8,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import net.minecraft.server.v1_16_R3.MinecraftServer;
+import net.minecraft.server.v1_16_R3.NetworkManager;
 import net.minecraft.server.v1_16_R3.PacketLoginInStart;
 import net.minecraft.server.v1_16_R3.ServerConnection;
 import org.bukkit.Bukkit;
@@ -39,6 +40,7 @@ public class ChannelInjector_1_16_5 implements ChannelInjector {
         if (isInjected) {
             return;
         }
+
         connectionListener = ((List<ChannelFuture>) get(ServerConnection.class, "listeningChannels", MinecraftServer.getServer().getServerConnection())).get(0);
         connectionListener.channel().pipeline().addFirst("inject_handler", new ChannelInboundHandlerAdapter() {
             @Override
